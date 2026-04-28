@@ -278,12 +278,14 @@ function toggleCart() {
 function placeOrder() {
   var keys = Object.keys(cart);
   if (keys.length === 0) return;
-  var items = keys.map(function (id) { return { id: id, name: cart[id].name, price: cart[id].price, qty: cart[id].qty }; });
+  var items = keys.map(function (id) {
+    return { id: parseInt(id, 10), name: cart[id].name, price: cart[id].price, qty: cart[id].qty };
+  });
   showLoading('Placing your order…');
-  fetch('/guest/place-order', {
+  fetch('/food/order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items: items })
+    body: JSON.stringify({ items: items, instructions: '', booking_id: null })
   }).then(function (r) { return r.json(); }).then(function (data) {
     hideLoading();
     if (data.success) {
@@ -292,7 +294,7 @@ function placeOrder() {
       showToast('Order placed successfully!', 'success');
       setTimeout(function () { location.reload(); }, 1500);
     } else {
-      showToast(data.error || 'Failed to place order.', 'error');
+      showToast(data.message || 'Failed to place order.', 'error');
     }
   }).catch(function () { hideLoading(); showToast('Network error. Try again.', 'error'); });
 }
@@ -318,20 +320,38 @@ function showToast(msg, type) {
 // ── STATUS POLLING ───────────────────────────────
 function pollOrderStatus(orderId, statusEl) {
   if (!orderId || !statusEl) return;
+  var oid = parseInt(orderId, 10);
   setInterval(function () {
-    fetch('/guest/api/order-status/' + orderId)
+    fetch('/api/order-status')
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.status) { statusEl.textContent = d.status; statusEl.className = 'badge badge-' + d.status.toLowerCase().replace(/\s/g, '-'); } })
+      .then(function (list) {
+        var d = Array.isArray(list)
+          ? list.find(function (o) { return o.id === oid; })
+          : null;
+        if (d && d.status) {
+          statusEl.textContent = d.status;
+          statusEl.className = 'badge badge-' + String(d.status).toLowerCase().replace(/\s/g, '-');
+        }
+      })
       .catch(function () {});
   }, 15000);
 }
 
 function pollServiceStatus(reqId, statusEl) {
   if (!reqId || !statusEl) return;
+  var rid = parseInt(reqId, 10);
   setInterval(function () {
-    fetch('/guest/api/service-status/' + reqId)
+    fetch('/api/service-status')
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.status) { statusEl.textContent = d.status; statusEl.className = 'badge badge-' + d.status.toLowerCase().replace(/\s/g, '-'); } })
+      .then(function (list) {
+        var d = Array.isArray(list)
+          ? list.find(function (o) { return o.id === rid; })
+          : null;
+        if (d && d.status) {
+          statusEl.textContent = d.status;
+          statusEl.className = 'badge badge-' + String(d.status).toLowerCase().replace(/\s/g, '-');
+        }
+      })
       .catch(function () {});
   }, 15000);
 }
