@@ -68,7 +68,7 @@
           <div class="rcd-status {{ room.status }}">{{ room.status.title() }}</div>
         </div>
 
-        <div class="rcd-body">
+        <div class="rcd-body rcd-body-flex">
           <div class="rcd-header">
             <h3>Room {{ room.room_number }}</h3>
             <div class="rcd-price">₹{{ "%.0f"|format(room.price_per_night) }}<span>/night</span></div>
@@ -80,20 +80,26 @@
             <span>🏢 Floor {{ room.floor }}</span>
             <span>👥 {{ room.capacity }} Guests</span>
           </div>
-          {% if room.amenities %}
-          <div class="room-features">
-            {% for a in room.amenities.split(',')[:4] %}
-            <span class="feature-tag">{{ a.strip() }}</span>
-            {% endfor %}
+          <div class="rcd-amenities-slot">
+            {% if room.amenities and room.amenities.strip() %}
+            <div class="room-features">
+              {% for a in room.amenities.split(',')[:6] %}
+              <span class="feature-tag">{{ a.strip() }}</span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="rcd-no-amenities">No amenities listed for this listing — linens, Wi‑Fi &amp; climate control included.</p>
+            {% endif %}
           </div>
-          {% endif %}
 
+          <div class="rcd-actions">
           {% if room.status == 'available' %}
           <a href="{{ url_for('main.book_room', room_id=room.id) }}{% if check_in %}?check_in={{ check_in }}&check_out={{ check_out }}{% endif %}"
              class="btn btn-primary btn-full">Book Now</a>
           {% else %}
-          <button class="btn btn-disabled btn-full" disabled>Not Available</button>
+          <button type="button" class="btn btn-disabled btn-full" disabled>Not Available</button>
           {% endif %}
+          </div>
         </div>
 
       </div>

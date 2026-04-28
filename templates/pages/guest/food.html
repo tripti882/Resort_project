@@ -59,13 +59,11 @@
                   <tr>
                     <td>
                       <img class="dish-image"
-                           src="{{ url_for('static', filename='images/' ~ item.name ~ '.jpg') }}"
-                           data-base="{{ url_for('static', filename='images/' ~ item.name) }}"
+                           src="{{ url_for('static', filename=item.image_path or category_images.get(category, 'images/pizza.jpg')) }}"
                            data-fallback="{{ url_for('static', filename=category_images.get(category, 'images/pizza.jpg')) }}"
-                           data-ext-index="0"
-                           onerror="resolveDishImage(this)"
+                           onerror="this.onerror=null;this.src=this.dataset.fallback"
                            alt="{{ item.name }}"
-                           style="width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid #eee;" />
+                           style="width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid rgba(255,255,255,0.12);" />
                     </td>
                     <td>
                       <strong>{{ item.name }}</strong>
@@ -147,19 +145,6 @@
 {% block extra_js %}
 <script>
   const cart = {};
-  const dishImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
-
-  function resolveDishImage(img) {
-    const currentIdx = parseInt(img.dataset.extIndex || '0', 10);
-    const nextIdx    = currentIdx + 1;
-    if (nextIdx < dishImageExtensions.length) {
-      img.dataset.extIndex = String(nextIdx);
-      img.src = `${img.dataset.base}${dishImageExtensions[nextIdx]}`;
-      return;
-    }
-    img.onerror = null;
-    img.src = img.dataset.fallback;
-  }
 
   function renderCart() {
     const cartItems = document.getElementById('cart-items');

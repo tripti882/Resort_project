@@ -36,12 +36,12 @@ def _ensure_default_menu_items():
     if MenuItem.query.count() > 0:
         return
     defaults = [
-        {"name": "Margherita Pizza", "description": "Classic pizza with mozzarella and basil.", "category": "main_course", "price": 420, "is_veg": True},
-        {"name": "Paneer Tikka", "description": "Char-grilled cottage cheese cubes with spices.", "category": "starters", "price": 320, "is_veg": True},
-        {"name": "Chicken Burger", "description": "Grilled chicken patty burger with fries.", "category": "main_course", "price": 390, "is_veg": False},
-        {"name": "Pasta Alfredo", "description": "Creamy alfredo pasta with herbs.", "category": "main_course", "price": 360, "is_veg": True},
-        {"name": "Chocolate Brownie", "description": "Warm brownie served with vanilla scoop.", "category": "desserts", "price": 240, "is_veg": True},
-        {"name": "Fresh Lime Soda", "description": "Refreshing sweet and salted lime soda.", "category": "beverages", "price": 120, "is_veg": True},
+        {"name": "Margherita Pizza", "description": "Classic pizza with mozzarella and basil.", "category": "main_course", "price": 420, "is_veg": True, "image_path": "images/pizza.jpg"},
+        {"name": "Paneer Tikka", "description": "Char-grilled cottage cheese cubes with spices.", "category": "starters", "price": 320, "is_veg": True, "image_path": "images/paneertika.jpg"},
+        {"name": "Chicken Burger", "description": "Grilled chicken patty burger with fries.", "category": "main_course", "price": 390, "is_veg": False, "image_path": "images/pizza.jpg"},
+        {"name": "Pasta Alfredo", "description": "Creamy alfredo pasta with herbs.", "category": "main_course", "price": 360, "is_veg": True, "image_path": "images/pizza.jpg"},
+        {"name": "Chocolate Brownie", "description": "Warm brownie served with vanilla scoop.", "category": "desserts", "price": 240, "is_veg": True, "image_path": "images/brownie.jpg"},
+        {"name": "Fresh Lime Soda", "description": "Refreshing sweet and salted lime soda.", "category": "beverages", "price": 120, "is_veg": True, "image_path": "images/soda.jpg"},
     ]
     for item in defaults:
         db.session.add(MenuItem(is_available=True, **item))

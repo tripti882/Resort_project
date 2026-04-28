@@ -83,38 +83,87 @@
     </div>
 
     {# ── Menu Management panel ── #}
-    <div class="dash-card" style="margin-top:2rem">
-      <div class="card-header"><h3>Menu Management</h3></div>
+    <div class="dash-card dash-card-spaced">
+      <div class="card-header">
+        <div>
+          <h3>Menu management</h3>
+          <p class="card-header-sub">Add dishes or replace photos for existing items. Guests see the name, price, and image shown here.</p>
+        </div>
+      </div>
 
-      {# Add new menu item form #}
       <form method="POST"
             action="{{ url_for('staff.add_menu_item') }}"
-            class="form-grid">
-        <input  type="text"   name="name"        placeholder="Item name"   required class="form-input" />
-        <input  type="text"   name="description" placeholder="Description"          class="form-input" />
-        <select name="category" class="form-input" required>
-          <option value="">Select Category</option>
-          <option value="starters">Starters</option>
-          <option value="main_course">Main Course</option>
-          <option value="desserts">Desserts</option>
-          <option value="beverages">Beverages</option>
-        </select>
-        <input  type="number" name="price" step="0.01" placeholder="Price" required class="form-input" />
-        <label class="checkbox-wrap">
-          <input type="checkbox" name="is_veg" /> Veg
-        </label>
-        <button type="submit" class="btn btn-primary">Add Item</button>
+            enctype="multipart/form-data"
+            class="staff-menu-add-form">
+        <div class="form-grid staff-menu-grid">
+          <div class="form-group form-group-tight">
+            <label class="form-label" for="menu-name">Item name</label>
+            <input id="menu-name" type="text" name="name" placeholder="e.g. Grilled fish" required class="form-input" />
+          </div>
+          <div class="form-group form-group-tight">
+            <label class="form-label" for="menu-cat">Category</label>
+            <select id="menu-cat" name="category" class="form-input" required>
+              <option value="">Choose category</option>
+              <option value="starters">Starters</option>
+              <option value="main_course">Main course</option>
+              <option value="desserts">Desserts</option>
+              <option value="beverages">Beverages</option>
+              <option value="buffet">Buffet</option>
+              <option value="special_event_menu">Special event menu</option>
+            </select>
+          </div>
+          <div class="form-group form-group-tight">
+            <label class="form-label" for="menu-price">Price (₹)</label>
+            <input id="menu-price" type="number" name="price" step="0.01" min="0" placeholder="0.00" required class="form-input" />
+          </div>
+          <div class="form-group form-group-tight form-group-check">
+            <span class="form-label">Diet</span>
+            <label class="checkbox-wrap menu-veg-label">
+              <input type="checkbox" name="is_veg" /> Vegetarian
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="menu-desc">Description <span class="form-optional">(optional)</span></label>
+          <input id="menu-desc" type="text" name="description" placeholder="Short line for the menu" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="menu-photo">Photo <span class="form-optional">(optional)</span></label>
+          <input id="menu-photo" type="file" name="dish_photo" accept="image/jpeg,image/png,image/gif,image/webp" class="form-input staff-file-input" />
+          <p class="form-hint-small">JPG, PNG, GIF, or WebP. If you skip this, a default image is used.</p>
+        </div>
+        <button type="submit" class="btn btn-primary">Add to menu</button>
       </form>
 
       {# Existing menu items table #}
       <div class="table-wrap" style="margin-top:1rem">
         <table class="data-table">
           <thead>
-            <tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
+            <tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {% for m in menu_items %}
             <tr>
+              <td class="menu-photo-cell">
+                <div class="menu-photo-stack">
+                  <img src="{{ url_for('static', filename=m.image_path or 'images/pizza.jpg') }}"
+                       alt=""
+                       width="48" height="48"
+                       class="menu-thumb-admin" />
+                  <form method="post"
+                        action="{{ url_for('staff.update_menu_item_photo', item_id=m.id) }}"
+                        enctype="multipart/form-data"
+                        class="menu-photo-form">
+                    <label class="sr-only" for="dish-photo-{{ m.id }}">New photo for {{ m.name }}</label>
+                    <input id="dish-photo-{{ m.id }}"
+                           type="file"
+                           name="dish_photo"
+                           accept="image/jpeg,image/png,image/gif,image/webp"
+                           class="staff-file-input staff-file-input--table" />
+                    <button type="submit" class="btn btn-sm btn-outline">Replace photo</button>
+                  </form>
+                </div>
+              </td>
               <td>{{ m.name }}</td>
               <td>{{ m.category }}</td>
               <td>₹{{ "%.0f"|format(m.price) }}</td>

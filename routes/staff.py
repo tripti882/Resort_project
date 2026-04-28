@@ -1,8 +1,15 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
-from flask_login import login_required, current_user
-from models import db, Room, Booking, FoodOrder, ServiceRequest, User, Invoice, ActivityBooking, MenuItem
-from datetime import datetime
 import json
+import os
+import uuid
+from datetime import datetime
+
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
+from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+
+from models import db, Room, Booking, FoodOrder, ServiceRequest, User, Invoice, ActivityBooking, MenuItem
+
+MENU_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 staff_bp = Blueprint("staff", __name__)
 STAFF_ROLES = {"admin", "frontdesk", "kitchen", "housekeeping"}
@@ -238,6 +245,51 @@ def food_orders():
     )
 
 
+def _ensure_menu_upload_dir():
+    path = os.path.join(current_app.root_path, "static", "uploads", "menu")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _save_dish_photo_file(file_storage):
+    """Save an uploaded dish image. Returns path relative to static/."""
+    if not file_storage or not str(getattr(file_storage, "filename", "") or "").strip():
+        raise ValueError("Please choose an image file.")
+    ext = os.path.splitext(file_storage.filename)[1].lower()
+    if ext not in MENU_IMAGE_EXTS:
+        raise ValueError("Use JPG, PNG, GIF, or WebP.")
+    stem = secure_filename(os.path.splitext(file_storage.filename)[0])
+    if stem:
+        safe = f"{stem}_{uuid.uuid4().hex[:10]}{ext}"
+    else:
+        safe = f"dish_{uuid.uuid4().hex}{ext}"
+    upload_dir = _ensure_menu_upload_dir()
+    dst = os.path.join(upload_dir, safe)
+    file_storage.save(dst)
+    return os.path.relpath(dst, os.path.join(current_app.root_path, "static")).replace("\\", "/")
+
+
+def _save_dish_photo_optional(file_storage):
+    """If a file was provided, save it; otherwise return None."""
+    if not file_storage or not str(getattr(file_storage, "filename", "") or "").strip():
+        return None
+    return _save_dish_photo_file(file_storage)
+
+
+def _remove_uploaded_dish_file_if_obsolete(relative_path, replaced_by):
+    """Remove a prior file under uploads/menu/ when it is replaced."""
+    if not relative_path or relative_path == replaced_by:
+        return
+    if not str(relative_path).startswith("uploads/menu/"):
+        return
+    full = os.path.join(current_app.root_path, "static", relative_path.replace("/", os.sep))
+    try:
+        if os.path.isfile(full):
+            os.remove(full)
+    except OSError:
+        pass
+
+
 @staff_bp.route("/menu-items/add", methods=["POST"])
 @login_required
 @role_required("admin", "kitchen")
@@ -261,6 +313,26 @@ def add_menu_item():
         flash("Price must be greater than zero.", "error")
         return redirect(url_for("staff.food_orders"))
 
+    image_final = None
+    f = request.files.get("dish_photo")
+    if f and getattr(f, "filename", "") and getattr(f, "filename", "").strip():
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in MENU_IMAGE_EXTS:
+            flash("Photo must be JPG, PNG, GIF, or WebP.", "error")
+            return redirect(url_for("staff.food_orders"))
+        stem = secure_filename(os.path.splitext(f.filename)[0])
+        if stem:
+            safe = f"{stem}_{uuid.uuid4().hex[:10]}{ext}"
+        else:
+            safe = f"dish_{uuid.uuid4().hex}{ext}"
+        upload_dir = _ensure_menu_upload_dir()
+        dst = os.path.join(upload_dir, safe)
+        f.save(dst)
+        rel = os.path.relpath(dst, os.path.join(current_app.root_path, "static")).replace("\\", "/")
+        image_final = rel
+    else:
+        image_final = "images/pizza.jpg"
+
     item = MenuItem(
         name=name,
         description=description,
@@ -268,10 +340,30 @@ def add_menu_item():
         price=price,
         is_available=True,
         is_veg=is_veg,
+        image_path=image_final,
     )
     db.session.add(item)
     db.session.commit()
     flash(f"Menu item '{name}' added.", "success")
+    return redirect(url_for("staff.food_orders"))
+
+
+@staff_bp.route("/menu-items/<int:item_id>/photo", methods=["POST"])
+@login_required
+@role_required("admin", "kitchen")
+def update_menu_item_photo(item_id):
+    item = MenuItem.query.get_or_404(item_id)
+    f = request.files.get("dish_photo")
+    try:
+        new_path = _save_dish_photo_file(f)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("staff.food_orders"))
+    old_path = item.image_path
+    item.image_path = new_path
+    db.session.commit()
+    _remove_uploaded_dish_file_if_obsolete(old_path, new_path)
+    flash(f"Photo updated for '{item.name}'.", "success")
     return redirect(url_for("staff.food_orders"))
 
 
@@ -291,8 +383,10 @@ def toggle_menu_item(item_id):
 def delete_menu_item(item_id):
     item = MenuItem.query.get_or_404(item_id)
     item_name = item.name
+    old_path = item.image_path
     db.session.delete(item)
     db.session.commit()
+    _remove_uploaded_dish_file_if_obsolete(old_path, None)
     flash(f"Menu item '{item_name}' deleted.", "success")
     return redirect(url_for("staff.food_orders"))
 

@@ -91,6 +91,8 @@ class MenuItem(db.Model):
     price = db.Column(db.Float, nullable=False)
     is_available = db.Column(db.Boolean, default=True)
     is_veg = db.Column(db.Boolean, default=False)
+    # Relative to static/: e.g. "images/pizza.jpg" or "uploads/menu/dish.jpg"
+    image_path = db.Column(db.String(255), default="images/pizza.jpg")
 
 class FoodOrder(db.Model):
     __tablename__ = "food_orders"
