@@ -19,7 +19,7 @@ def _migrate_schema():
         with db.engine.begin() as conn:
             conn.execute(
                 text(
-                    "UPDATE menu_items SET image_path = :p WHERE image_path IS NULL OR TRIM(IFNULL(image_path,'')) = ''"
+                    "UPDATE menu_items SET image_path = :p WHERE image_path IS NULL OR TRIM(IF NULL(image_path,'')) = ''"
                 ),
                 {"p": "images/pizza.jpg"},
             )
