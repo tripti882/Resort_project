@@ -53,22 +53,22 @@
   <div class="rooms-grid">
     {% set room_types = [
       {
-        "type": "Standard", "price": "₹8,500", "icon": "◈", "image": "images/room1.jpg",
+        "type": "Standard", "icon": "◈", "image": "images/room1.jpg",
         "desc": "Elegant comfort with city views, king bed, and premium amenities.",
         "features": ["King Bed", "City View", "WiFi", "Mini Bar"]
       },
       {
-        "type": "Deluxe", "price": "₹14,500", "icon": "◉", "image": "images/room3.jpg",
+        "type": "Deluxe",  "icon": "◉", "image": "images/room3.jpg",
         "desc": "Expansive deluxe rooms with private balcony and ocean-facing views.",
         "features": ["King Bed", "Balcony", "Ocean View", "Butler Service"]
       },
       {
-        "type": "Suite", "price": "₹24,000", "icon": "✦", "image": "images/room5.jpg",
+        "type": "Suite", "icon": "✦", "image": "images/room5.jpg",
         "desc": "Opulent suites with separate living space and curated luxury touches.",
         "features": ["2 Rooms", "Living Area", "Jacuzzi", "Private Terrace"]
       },
       {
-        "type": "Villa", "price": "₹28,000", "icon": "⌂", "image": "images/room7.jpg",
+        "type": "Villa", "icon": "⌂", "image": "images/room7.jpg",
         "desc": "Ultimate privacy in your own villa — pool, garden, and bespoke service.",
         "features": ["Private Pool", "Garden", "Full Kitchen", "Personal Chef"]
       }
@@ -81,7 +81,6 @@
         <div class="room-card-badge">{{ room.icon }} {{ room.type }}</div>
       </div>
       <div class="room-card-body">
-        <div class="room-card-price">From <strong>{{ room.price }}</strong> / night</div>
         <p class="room-card-desc">{{ room.desc }}</p>
         <div class="room-features">
           {% for f in room.features %}
