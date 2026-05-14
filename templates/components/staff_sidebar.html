@@ -53,6 +53,14 @@
     </a>
     {% endif %}
 
+    {# Admin-only: staff / access management #}
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('staff.staff_management') }}"
+       class="snav-item {% if active_page == 'staff_management' %}active{% endif %}">
+      <span class="sn-icon">👤</span> Staff Access
+    </a>
+    {% endif %}
+
     {# Housekeeping + admin see service requests #}
     {% if current_user.role in ('admin', 'housekeeping') %}
     <a href="{{ url_for('staff.service_requests') }}"

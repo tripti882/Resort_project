@@ -429,6 +429,40 @@ def update_service_request(req_id):
         flash(f"Service request #{req_id} updated.", "success")
     return redirect(url_for("staff.service_requests"))
 
+@staff_bp.route("/staff-management")
+@login_required
+@role_required("admin")
+def staff_management():
+    # Show all users with their roles; admin can change staff roles
+    all_users = User.query.order_by(User.role, User.name).all()
+    return render_template(
+        "pages/staff/staff_management.html",
+        users=all_users,
+        all_roles=["guest", "frontdesk", "kitchen", "housekeeping", "admin"],
+        role=current_user.role,
+    )
+
+
+@staff_bp.route("/staff-management/<int:user_id>/update-role", methods=["POST"])
+@login_required
+@role_required("admin")
+def update_user_role(user_id):
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get("role", "").strip()
+    allowed_roles = {"guest", "frontdesk", "kitchen", "housekeeping", "admin"}
+    if new_role not in allowed_roles:
+        flash("Invalid role selected.", "error")
+        return redirect(url_for("staff.staff_management"))
+    if user.id == current_user.id:
+        flash("You cannot change your own role.", "error")
+        return redirect(url_for("staff.staff_management"))
+    old_role = user.role
+    user.role = new_role
+    db.session.commit()
+    flash(f"{user.name}'s role changed from {old_role} → {new_role}.", "success")
+    return redirect(url_for("staff.staff_management"))
+
+
 @staff_bp.route("/api/stats")
 @login_required
 @staff_required
