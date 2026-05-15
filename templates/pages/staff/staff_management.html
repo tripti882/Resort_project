@@ -1,10 +1,9 @@
 {#
   pages/staff/staff_management.html
   ──────────────────────────────────
-  Admin-only page. Lists every user and lets the admin
-  assign / revoke staff roles without touching any other table.
-  The User.role column already stores 'guest' | 'frontdesk' |
-  'kitchen' | 'housekeeping' | 'admin'.
+  Admin-only page.
+  Top section: pending staff registration requests (approve / reject).
+  Bottom section: all approved users with role-change capability.
 #}
 
 {% extends "base/layout.html" %}
@@ -22,55 +21,152 @@
     <div class="dash-header">
       <div>
         <h1 class="dash-title">Staff Access Management</h1>
-        <p class="dash-sub">Grant or revoke portal access for any user</p>
+        <p class="dash-sub">Approve registrations and manage portal access</p>
       </div>
       <span class="role-badge-large">ADMIN</span>
     </div>
 
-    {# ── Quick-stats row ── #}
+    {# ── Quick-stats ── #}
     {% set staff_users = users | selectattr('role', 'ne', 'guest') | list %}
-    {% set guest_users = users | selectattr('role', 'equalto', 'guest') | list %}
     <div class="stats-row" style="margin-bottom:1.5rem">
       <div class="stat-card">
-        <div class="stat-icon blue">👥</div>
+        <div class="stat-icon red">⏳</div>
         <div class="stat-info">
-          <span class="stat-num">{{ users | length }}</span>
-          <span class="stat-label">Total Users</span>
+          <span class="stat-num">{{ pending | length }}</span>
+          <span class="stat-label">Pending Approval</span>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon green">🔑</div>
         <div class="stat-info">
           <span class="stat-num">{{ staff_users | length }}</span>
-          <span class="stat-label">Staff Members</span>
+          <span class="stat-label">Active Staff</span>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon yellow">🏨</div>
+        <div class="stat-icon blue">👥</div>
         <div class="stat-info">
-          <span class="stat-num">{{ guest_users | length }}</span>
-          <span class="stat-label">Guests</span>
+          <span class="stat-num">{{ users | length }}</span>
+          <span class="stat-label">Total Approved Users</span>
         </div>
       </div>
+    </div>
+
+    {# ══════════════════════════════════════════
+       SECTION 1 — Pending Registrations
+       ══════════════════════════════════════════ #}
+    <div class="dash-card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <h3>
+          ⏳ Pending Staff Registrations
+          {% if pending %}
+          <span style="background:#ef4444;color:#fff;border-radius:99px;
+                       font-size:.7rem;padding:.15rem .55rem;margin-left:.4rem;
+                       font-weight:700;vertical-align:middle">{{ pending | length }}</span>
+          {% endif %}
+        </h3>
+      </div>
+
+      {% if pending %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Applied For</th>
+              <th>Requested On</th>
+              <th>Grant Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in pending %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.5rem">
+                  <div style="width:30px;height:30px;border-radius:50%;
+                              background:#f59e0b;color:#fff;
+                              display:flex;align-items:center;justify-content:center;
+                              font-weight:700;font-size:.85rem;flex-shrink:0">
+                    {{ u.name[0].upper() }}
+                  </div>
+                  {{ u.name }}
+                </div>
+              </td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.phone or '—' }}</td>
+              <td>
+                <span class="badge" style="background:#8b5cf6;color:#fff">
+                  {{ u.pending_role or '—' }}
+                </span>
+              </td>
+              <td>{{ u.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.approve_user', user_id=u.id) }}"
+                      id="approve-form-{{ u.id }}"
+                      style="display:inline">
+                  <select name="role" class="mini-select" style="min-width:130px">
+                    {% for r in all_roles if r != 'guest' %}
+                    <option value="{{ r }}"
+                      {% if u.pending_role == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                  </select>
+              </td>
+              <td style="white-space:nowrap">
+                  <button type="submit" form="approve-form-{{ u.id }}"
+                          style="background:#22c55e;color:#fff;border:none;
+                                 padding:.35rem .8rem;border-radius:6px;
+                                 cursor:pointer;font-size:.8rem;margin-right:.3rem"
+                          onclick="return confirm('Approve {{ u.name }}?')">
+                    ✓ Approve
+                  </button>
+                </form>
+                <form method="POST"
+                      action="{{ url_for('staff.reject_user', user_id=u.id) }}"
+                      style="display:inline">
+                  <button type="submit"
+                          style="background:#ef4444;color:#fff;border:none;
+                                 padding:.35rem .8rem;border-radius:6px;
+                                 cursor:pointer;font-size:.8rem"
+                          onclick="return confirm('Reject and delete {{ u.name }}?')">
+                    ✗ Reject
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding:2rem;text-align:center;color:var(--text-muted)">
+        <div style="font-size:2rem;margin-bottom:.5rem">✅</div>
+        <p>No pending registrations — all clear!</p>
+      </div>
+      {% endif %}
     </div>
 
     {# ── Role legend ── #}
     <div class="dash-card" style="margin-bottom:1.5rem;padding:1rem 1.4rem">
       <p style="margin:0;font-size:.85rem;color:var(--text-muted)">
         <strong>Roles &amp; Portal Access:</strong>&nbsp;
-        <span class="badge badge-confirmed" style="margin:0 4px">admin</span> Full access &nbsp;|&nbsp;
-        <span class="badge badge-pending"   style="margin:0 4px">frontdesk</span> Bookings, Rooms, Activities &nbsp;|&nbsp;
-        <span class="badge"                 style="margin:0 4px;background:#8b5cf6;color:#fff">kitchen</span> Food Orders &nbsp;|&nbsp;
+        <span class="badge badge-confirmed"  style="margin:0 4px">admin</span> Full access &nbsp;|&nbsp;
+        <span class="badge badge-pending"    style="margin:0 4px">frontdesk</span> Bookings, Rooms, Activities &nbsp;|&nbsp;
+        <span class="badge"                  style="margin:0 4px;background:#8b5cf6;color:#fff">kitchen</span> Food Orders &nbsp;|&nbsp;
         <span class="badge badge-checked_in" style="margin:0 4px">housekeeping</span> Service Requests &nbsp;|&nbsp;
-        <span class="badge"                 style="margin:0 4px;background:#6b7280;color:#fff">guest</span> No staff access
+        <span class="badge"                  style="margin:0 4px;background:#6b7280;color:#fff">guest</span> No staff access
       </p>
     </div>
 
-    {# ── User table ── #}
+    {# ══════════════════════════════════════════
+       SECTION 2 — All Approved Users
+       ══════════════════════════════════════════ #}
     <div class="dash-card">
       <div class="card-header">
-        <h3>All Users</h3>
-        {# Live search box #}
+        <h3>All Approved Users</h3>
         <input type="text" id="user-search" placeholder="🔍  Search name or email…"
                style="padding:.4rem .8rem;border:1px solid var(--border);border-radius:6px;
                       font-size:.875rem;background:var(--bg-card);color:var(--text-main);width:220px"
@@ -81,13 +177,8 @@
         <table class="data-table" id="user-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Joined</th>
-              <th>Current Role</th>
-              <th>Change Access</th>
+              <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
+              <th>Joined</th><th>Current Role</th><th>Change Access</th>
             </tr>
           </thead>
           <tbody>
@@ -131,16 +222,13 @@
                   <form method="POST"
                         action="{{ url_for('staff.update_user_role', user_id=u.id) }}"
                         style="display:flex;gap:.5rem;align-items:center">
-                    <select name="role" class="mini-select"
-                            style="min-width:130px"
-                            onchange="confirmRoleChange(this, '{{ u.name }}')">
+                    <select name="role" class="mini-select" style="min-width:130px"
+                            onchange="confirmAdminPromotion(this, '{{ u.name }}')">
                       {% for r in all_roles %}
-                      <option value="{{ r }}" {% if u.role == r %}selected{% endif %}>
-                        {{ r }}
-                      </option>
+                      <option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r }}</option>
                       {% endfor %}
                     </select>
-                    <button type="submit" class="btn-sm"
+                    <button type="submit"
                             style="background:var(--accent);color:#fff;border:none;
                                    padding:.35rem .8rem;border-radius:6px;
                                    cursor:pointer;font-size:.8rem;white-space:nowrap">
@@ -154,41 +242,8 @@
           </tbody>
         </table>
       </div>
-
-      {# Empty state when search finds nothing #}
       <div id="no-results" style="display:none;padding:2rem;text-align:center;color:var(--text-muted)">
         No users match your search.
-      </div>
-    </div>
-
-    {# ── Role quick-grant panel (New Employee shortcut) ── #}
-    <div class="dash-card" style="margin-top:1.5rem">
-      <div class="card-header">
-        <h3>🆕 New Employee? Quick Access Grant</h3>
-      </div>
-      <p style="padding:0 1.4rem;font-size:.875rem;color:var(--text-muted);margin-bottom:1rem">
-        If a new staff member has already registered as a guest, find them in the table above and
-        change their role. The portal sections they can access will update immediately on their
-        next login — <strong>no new table or account needed.</strong>
-      </p>
-      <div style="padding:0 1.4rem 1.4rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem">
-        {% set portal_map = [
-          ('frontdesk',   '📋', 'Front Desk',    'Bookings, Rooms, Activities'),
-          ('kitchen',     '🍽', 'Kitchen',       'Food Orders & Menu'),
-          ('housekeeping','🛎', 'Housekeeping',  'Service Requests'),
-          ('admin',       '⚙️', 'Admin',         'Full access to everything'),
-        ] %}
-        {% for role_key, icon, label, desc in portal_map %}
-        <div style="border:1px solid var(--border);border-radius:10px;padding:1rem;
-                    background:var(--bg-main)">
-          <div style="font-size:1.5rem;margin-bottom:.4rem">{{ icon }}</div>
-          <div style="font-weight:600;margin-bottom:.25rem">{{ label }} Portal</div>
-          <div style="font-size:.78rem;color:var(--text-muted)">{{ desc }}</div>
-          <div style="margin-top:.6rem;font-size:.75rem;
-                      background:var(--bg-card);border-radius:4px;padding:.3rem .5rem;
-                      color:var(--text-muted)">Set role → <strong>{{ role_key }}</strong></div>
-        </div>
-        {% endfor %}
       </div>
     </div>
 
@@ -196,28 +251,23 @@
 </div>
 
 <script>
-/* Live search */
-function filterUsers(query) {
-  const q = query.toLowerCase();
-  const rows = document.querySelectorAll('.user-row');
-  let visible = 0;
-  rows.forEach(row => {
-    const match = row.dataset.search.includes(q);
-    row.style.display = match ? '' : 'none';
-    if (match) visible++;
+function filterUsers(q) {
+  q = q.toLowerCase();
+  var rows = document.querySelectorAll('.user-row');
+  var visible = 0;
+  rows.forEach(function(r) {
+    var show = r.dataset.search.includes(q);
+    r.style.display = show ? '' : 'none';
+    if (show) visible++;
   });
   document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
 }
-
-/* Confirm before promoting to admin */
-function confirmRoleChange(select, name) {
-  if (select.value === 'admin') {
-    const ok = confirm(`Give ${name} full ADMIN access?\nThis grants complete control over the system.`);
+function confirmAdminPromotion(sel, name) {
+  if (sel.value === 'admin') {
+    var ok = confirm('Give ' + name + ' full ADMIN access?\nThis grants complete control over the system.');
     if (!ok) {
-      /* revert to original — re-select the originally selected option */
-      const opts = select.options;
-      for (let i = 0; i < opts.length; i++) {
-        if (opts[i].defaultSelected) { select.selectedIndex = i; break; }
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].defaultSelected) { sel.selectedIndex = i; break; }
       }
     }
   }

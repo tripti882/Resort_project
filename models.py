@@ -14,6 +14,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     role = db.Column(db.String(20), default="guest")
+    # For staff self-registrations: False until admin approves.
+    # Guests and admin-created users default to True (auto-approved).
+    is_approved = db.Column(db.Boolean, default=True, nullable=False)
+    # Desired role requested during staff self-registration
+    pending_role = db.Column(db.String(20), nullable=True)
     bookings = db.relationship("Booking", backref="guest", lazy=True)
     food_orders = db.relationship("FoodOrder", backref="guest", lazy=True)
     service_requests = db.relationship(

@@ -76,7 +76,10 @@
       </form>
 
       <p class="auth-footer-text">
-        Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+        Guest? <a href="{{ url_for('auth.register') }}">Register here</a>
+      </p>
+      <p class="auth-footer-text">
+        New staff member? <a href="{{ url_for('auth.staff_register') }}">Apply for staff access</a>
       </p>
     </div>
   </div>

@@ -433,14 +433,44 @@ def update_service_request(req_id):
 @login_required
 @role_required("admin")
 def staff_management():
-    # Show all users with their roles; admin can change staff roles
-    all_users = User.query.order_by(User.role, User.name).all()
+    pending = User.query.filter_by(is_approved=False).order_by(User.created_at.desc()).all()
+    all_users = User.query.filter_by(is_approved=True).order_by(User.role, User.name).all()
     return render_template(
         "pages/staff/staff_management.html",
         users=all_users,
+        pending=pending,
         all_roles=["guest", "frontdesk", "kitchen", "housekeeping", "admin"],
         role=current_user.role,
     )
+
+
+@staff_bp.route("/staff-management/<int:user_id>/approve", methods=["POST"])
+@login_required
+@role_required("admin")
+def approve_user(user_id):
+    user = User.query.get_or_404(user_id)
+    granted_role = request.form.get("role") or user.pending_role or "guest"
+    allowed = {"guest", "frontdesk", "kitchen", "housekeeping", "admin"}
+    if granted_role not in allowed:
+        granted_role = "guest"
+    user.role = granted_role
+    user.is_approved = True
+    user.pending_role = None
+    db.session.commit()
+    flash(f"✅ {user.name} approved as {granted_role}.", "success")
+    return redirect(url_for("staff.staff_management"))
+
+
+@staff_bp.route("/staff-management/<int:user_id>/reject", methods=["POST"])
+@login_required
+@role_required("admin")
+def reject_user(user_id):
+    user = User.query.get_or_404(user_id)
+    name = user.name
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"❌ {name}'s registration has been rejected and removed.", "info")
+    return redirect(url_for("staff.staff_management"))
 
 
 @staff_bp.route("/staff-management/<int:user_id>/update-role", methods=["POST"])

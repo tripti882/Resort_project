@@ -1,0 +1,150 @@
+{#
+  pages/public/staff_register.html
+  ──────────────────────────────────
+  Staff self-registration. Account is created with is_approved=False.
+  Admin must approve before the user can log in.
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Staff Registration{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+
+  {# ── Left decorative panel ── #}
+  <div class="auth-left">
+    <img src="{{ url_for('static', filename='images/hero.png') }}"
+         alt="Resort" class="auth-bg-img" />
+    <div class="auth-overlay"></div>
+    <div class="auth-left-content">
+      <a href="{{ url_for('main.index') }}" class="auth-logo">
+        <span class="brand-icon">✦</span>
+        <span class="brand-name">Serenity Stay</span>
+      </a>
+      <blockquote class="auth-quote">
+        "Our team is the heart of every perfect stay."
+      </blockquote>
+    </div>
+  </div>
+
+  {# ── Right form panel ── #}
+  <div class="auth-right">
+    <div class="auth-box">
+
+      {# Header #}
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.25rem">
+        <span style="font-size:1.5rem">🔐</span>
+        <h2 class="auth-title" style="margin:0">Staff Registration</h2>
+      </div>
+      <p class="auth-sub" style="margin-bottom:1.25rem">
+        Submit your details — a manager will approve your access.
+      </p>
+
+      {# Approval notice banner #}
+      <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
+                  border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;
+                  display:flex;gap:.6rem;align-items:flex-start">
+        <span style="font-size:1.1rem;flex-shrink:0">⏳</span>
+        <p style="margin:0;font-size:.8rem;color:var(--text-muted);line-height:1.5">
+          Your account will be <strong>pending approval</strong> after registration.
+          You will only be able to log in once an admin has approved your request.
+        </p>
+      </div>
+
+      <form method="POST"
+            action="{{ url_for('auth.staff_register') }}"
+            onsubmit="return validateStaffReg();">
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="name" class="form-input"
+                 placeholder="John Doe" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" class="form-input"
+                 placeholder="staff@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" name="phone" class="form-input"
+                 placeholder="+91 9876543210" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Applying for Role</label>
+          <select name="desired_role" class="form-input" required>
+            <option value="" disabled selected>Select a department…</option>
+            {% for r in staff_roles %}
+            <option value="{{ r }}">
+              {% if r == 'frontdesk' %}Front Desk
+              {% elif r == 'kitchen' %}Kitchen
+              {% elif r == 'housekeeping' %}Housekeeping
+              {% else %}{{ r.title() }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <input type="password" name="password" class="form-input"
+                   id="s_pwd" placeholder="Min. 6 characters" required />
+            <button type="button" class="pwd-toggle"
+                    onclick="toggleField('s_pwd')">👁</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrap">
+            <input type="password" name="confirm_password" class="form-input"
+                   id="s_cpwd" placeholder="Repeat password" required />
+            <button type="button" class="pwd-toggle"
+                    onclick="toggleField('s_cpwd')">👁</button>
+          </div>
+        </div>
+
+        <div id="pwd-error" style="display:none;color:#ef4444;font-size:.8rem;margin-bottom:.75rem">
+          Passwords do not match.
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          Submit for Approval
+        </button>
+      </form>
+
+      <p class="auth-footer-text" style="margin-top:1rem">
+        Already approved? <a href="{{ url_for('auth.login') }}">Sign in here</a>
+      </p>
+      <p class="auth-footer-text">
+        Not staff? <a href="{{ url_for('auth.register') }}">Guest registration</a>
+      </p>
+
+    </div>
+  </div>
+
+</div>
+
+{% block extra_js %}
+<script>
+  function validateStaffReg() {
+    var p   = document.getElementById('s_pwd').value;
+    var c   = document.getElementById('s_cpwd').value;
+    var err = document.getElementById('pwd-error');
+    if (p !== c) { err.style.display = 'block'; return false; }
+    if (p.length < 6) { alert('Password must be at least 6 characters.'); return false; }
+    err.style.display = 'none';
+    return true;
+  }
+  function toggleField(id) {
+    var f = document.getElementById(id);
+    f.type = (f.type === 'password') ? 'text' : 'password';
+  }
+</script>
+{% endblock %}
+
+{% endblock %}
